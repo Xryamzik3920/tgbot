@@ -1,9 +1,10 @@
 from telegram import Update
+import os
 from telegram.ext import (
     Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 )
 
-TOKEN = 'ВАШ_ТОКЕН_ЗДЕСЬ'
+TOKEN = os.getenv("BOT_TOKEN")
 
 def start(update: Update, context: CallbackContext):
     update.message.reply_text('Привет! Я — ваш бот.')
