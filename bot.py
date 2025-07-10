@@ -1,7 +1,8 @@
 import os
+import csv
 import smtplib
 from email.message import EmailMessage
-
+from datetime import datetime
 from dotenv import load_dotenv
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import (
@@ -13,7 +14,7 @@ from telegram.ext import (
 )
 load_dotenv('enviroment.env')
 TOKEN = os.getenv("BOT_TOKEN")
-
+CSV_PATH = 'events.csv'
 # SMTP‑настройки (добавьте в enviroment.env)
 EMAIL_HOST = os.getenv('EMAIL_HOST')         # например, smtp.gmail.com
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
@@ -40,16 +41,28 @@ back_keyboard = ReplyKeyboardMarkup(
 # Словарь с картинками и подписями
 media_map = {
     'Обо мне': {
-        'photo': 'void sky.jpg',
-        'caption': 'Описание для варианта 1'
-    },
+        'photo': 'book.png',
+        'caption': """\
+Студент 1 курса магистратуры ФГБОУ «Московский авиационный институт (национальный исследовательский университет)» (далее – «МАИ»). Специальность – прикладная математика.         Выпускающая кафедра 802 – “Мехатроника и теоретическая механика”. 
+Образование – высшее, бакалавр:
+1) ГБОУ г. Москвы «Школа № 1158» 1–7 класс (2008–2015).
+2) ГБОУ г. Москвы «Бауманская инженерная школа № 1580» 8–11 класс (2015–2019) окончил физико‑математический класс.
+3) Бакалавриат МАИ, Институт № 8 “Компьютерные науки и прикладная математика”. Выпускающая кафедра 802 – “Мехатроника и теоретическая механика” (2020–2024). Диплом: «Неявные методы Рунге–Кутты низкого порядка точности: построение численных схем и областей абсолютной устойчивости» — сдан на оценку «Отлично».
+4) Магистратура МАИ, Институт № 8 “Компьютерные науки и прикладная математика”, специальность 01.04.04 «Прикладная математика», образовательная программа «Математическое и программное обеспечение мехатронных систем» (2024).
+"""},
     'Проекты': {
-        'photo': 'void.jpg',
-        'caption': 'Описание для варианта 2'
+        'photo': 'shesterenka.png',
+        'caption': (
+            '1) По данным цен на акции из индексов S&P-500, NASDAQ-100, DJI в течение последних 10 лет подсчитаны доходности, построены гистограммы, boxplot. Объединив доходности по секторам экономики построена диаграмма рассеивания, также были посчитаны метрики, такие как Value-at-Risk и Expected shortfall. Посмотреть проект в <a href="https://colab.research.google.com/drive/1-LlCYVhVXPQVtuLV4wqcGTIVbv89us54?usp=sharing">Colab</a>.\n\
+2) Обсчет AB теста. Посмотреть проект в <a href="https://colab.research.google.com/drive/1P43gNgNH6G82LQiEdvQGscyCuDa8CxcA?usp=sharing">Colab</a>.\n\
+3) Проверка различных гипотез с помощью подобранных для задачи критериев, таких как: точный t - тест, ассимптотический z-тест, тест Фишера и другие. Посмотреть проект в <a href="https://colab.research.google.com/drive/1zd6b2jpKm_D82eis8U8Gcmm6NHs_t8iW?usp=sharing">Colab</a>.'
+        ),
+        'parse_mode': 'HTML'
     },
 }
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    log_event(update.effective_user.id, False)
     # Приветствие и главное меню
     await update.message.reply_text('Приветствую! Этот бот создан для того, чтобы облегчить мой процесс найма. Тут вы сможете найти более полную информацию обо мне, а так же связаться со мной')
     await update.message.reply_text(
@@ -64,39 +77,43 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Если ждем от пользователя текст для отправки на почту
     if context.user_data.get('awaiting_email'):
-        # Обработка отмены
+        # 1.1) Обработка отмены
         if text == 'Отменить':
             await update.message.reply_text(
                 'Отправка сообщения отменена.',
                 reply_markup=action_pick
             )
-            context.user_data.pop('awaiting_email', None)
-            return
+            # НЕ логируем отмену как отправку
+        else:
+            # 1.2) Формируем и отправляем письмо
+            user_msg = text
+            msg = EmailMessage()
+            msg['Subject'] = 'Сообщение из Telegram‑бота'
+            msg['From']    = EMAIL_USER
+            msg['To']      = EMAIL_TO
+            msg.set_content(user_msg)
 
-        # Иначе — отправляем email
-        user_msg = text
-        msg = EmailMessage()
-        msg['Subject'] = 'Сообщение из Telegram‑бота'
-        msg['From']    = EMAIL_USER
-        msg['To']      = EMAIL_TO
-        msg.set_content(user_msg)
+            try:
+                with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as server:
+                    server.starttls()
+                    server.login(EMAIL_USER, EMAIL_PASS)
+                    server.send_message(msg)
 
-        try:
-            with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as server:
-                server.starttls()
-                server.login(EMAIL_USER, EMAIL_PASS)
-                server.send_message(msg)
-            await update.message.reply_text(
-                'Ваше сообщение отправлено на почту!',
-                reply_markup=action_pick
-            )
-        except Exception as e:
-            await update.message.reply_text(
-                f'Ошибка при отправке письма: {e}',
-                reply_markup=action_pick
-            )
+                # Логируем факт именно УСПЕШНОЙ отправки письма
+                log_event(update.effective_user.id, True)
 
-        # Сбросим флаг ожидания
+                await update.message.reply_text(
+                    'Ваше сообщение отправлено на почту!',
+                    reply_markup=action_pick
+                )
+            except Exception as e:
+                await update.message.reply_text(
+                    f'Ошибка при отправке письма: {e}',
+                    reply_markup=action_pick
+                )
+                # В случае ошибки тоже НЕ логируем отправку
+
+        # 1.3) В любом случае — сброс флага ожидания
         context.user_data.pop('awaiting_email', None)
         return
 
@@ -111,8 +128,18 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Вариант 1 и 2
     if text in media_map:
         media = media_map[text]
-        with open(media['photo'], 'rb') as img:
-            await update.message.reply_photo(img, caption=media['caption'])
+        photo_path = media['photo']
+        caption = media['caption']
+        parse_mode = media.get('parse_mode')  # например 'HTML' или 'MarkdownV2'
+
+     # Отправляем фото с учётом парсинга ссылок
+        with open(photo_path, 'rb') as img:
+            if parse_mode:
+                await update.message.reply_photo(img, caption=caption, parse_mode=parse_mode)
+            else:
+                await update.message.reply_photo(img, caption=caption)
+
+        # Показываем кнопку «Назад»
         await update.message.reply_text(
             'Чтобы вернуться в меню, нажмите «Назад»',
             reply_markup=back_keyboard
@@ -135,6 +162,18 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         'Пожалуйста, используйте кнопки ниже:',
         reply_markup=action_pick
     )
+
+def log_event(telegram_id: int, event: bool):
+    """Appends a line to CSV with telegram_id, event (True=start, False=email_sent?), timestamp."""
+    write_header = not os.path.exists(CSV_PATH) or os.stat(CSV_PATH).st_size == 0
+
+    with open(CSV_PATH, mode='a', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        if write_header:
+            writer.writerow(['telegram_id', 'event', 'timestamp'])
+        # Событие: True = заход (/start), False = отправка письма
+        timestamp = datetime.utcnow().isoformat()
+        writer.writerow([telegram_id, event, timestamp])
 
 if __name__ == '__main__':
     app = ApplicationBuilder().token(TOKEN).build()
