@@ -55,7 +55,8 @@ media_map = {
         'caption': (
             '1) По данным цен на акции из индексов S&P-500, NASDAQ-100, DJI в течение последних 10 лет подсчитаны доходности, построены гистограммы, boxplot. Объединив доходности по секторам экономики построена диаграмма рассеивания, также были посчитаны метрики, такие как Value-at-Risk и Expected shortfall. Посмотреть проект в <a href="https://colab.research.google.com/drive/1-LlCYVhVXPQVtuLV4wqcGTIVbv89us54?usp=sharing">Colab</a>.\n\
 2) Обсчет AB теста. Посмотреть проект в <a href="https://colab.research.google.com/drive/1P43gNgNH6G82LQiEdvQGscyCuDa8CxcA?usp=sharing">Colab</a>.\n\
-3) Проверка различных гипотез с помощью подобранных для задачи критериев, таких как: точный t - тест, ассимптотический z-тест, тест Фишера и другие. Посмотреть проект в <a href="https://colab.research.google.com/drive/1zd6b2jpKm_D82eis8U8Gcmm6NHs_t8iW?usp=sharing">Colab</a>.'
+3) Проверка различных гипотез с помощью подобранных для задачи критериев, таких как: точный t - тест, асимптотический z-тест, тест Фишера и другие. Посмотреть проект в <a href="https://colab.research.google.com/drive/1zd6b2jpKm_D82eis8U8Gcmm6NHs_t8iW?usp=sharing">Colab</a>.\n\
+4) Телеграм бот для сбора данных и проведения AB тестов'
         ),
         'parse_mode': 'HTML'
     },
@@ -64,7 +65,7 @@ media_map = {
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     log_event(update.effective_user.id, False)
     # Приветствие и главное меню
-    await update.message.reply_text('Приветствую! Этот бот создан для того, чтобы облегчить мой процесс найма. Тут вы сможете найти более полную информацию обо мне, а так же связаться со мной')
+    await update.message.reply_text('Приветствую! Этот бот создан для того, чтобы облегчить процесс найма. Тут вы сможете найти более полную информацию, а так же связаться со мной')
     await update.message.reply_text(
         'Пожалуйста, выберите одно из действий ниже:',
         reply_markup=action_pick
@@ -164,7 +165,7 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 def log_event(telegram_id: int, event: bool):
-    """Appends a line to CSV with telegram_id, event (True=start, False=email_sent?), timestamp."""
+    """Appends a line to CSV with telegram_id, event (False=start, True=email_sent?), timestamp."""
     write_header = not os.path.exists(CSV_PATH) or os.stat(CSV_PATH).st_size == 0
 
     with open(CSV_PATH, mode='a', newline='', encoding='utf-8') as f:
