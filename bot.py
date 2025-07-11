@@ -56,7 +56,7 @@ media_map = {
             '1) По данным цен на акции из индексов S&P-500, NASDAQ-100, DJI в течение последних 10 лет подсчитаны доходности, построены гистограммы, boxplot. Объединив доходности по секторам экономики построена диаграмма рассеивания, также были посчитаны метрики, такие как Value-at-Risk и Expected shortfall. Посмотреть проект в <a href="https://colab.research.google.com/drive/1-LlCYVhVXPQVtuLV4wqcGTIVbv89us54?usp=sharing">Colab</a>.\n\
 2) Обсчет AB теста. Посмотреть проект в <a href="https://colab.research.google.com/drive/1P43gNgNH6G82LQiEdvQGscyCuDa8CxcA?usp=sharing">Colab</a>.\n\
 3) Проверка различных гипотез с помощью подобранных для задачи критериев, таких как: точный t - тест, асимптотический z-тест, тест Фишера и другие. Посмотреть проект в <a href="https://colab.research.google.com/drive/1zd6b2jpKm_D82eis8U8Gcmm6NHs_t8iW?usp=sharing">Colab</a>.\n\
-4) Телеграм бот для сбора данных и проверки гипотезы о долях.'
+4) Телеграм бот для сбора данных и проведения AB тестов. Посмотреть проект на <a href="https://github.com/Xryamzik3920/tgbot">GitHub</a>.'
         ),
         'parse_mode': 'HTML'
     },
