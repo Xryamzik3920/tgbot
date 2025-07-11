@@ -15,14 +15,14 @@ from telegram.ext import (
 load_dotenv('enviroment.env')
 TOKEN = os.getenv("BOT_TOKEN")
 CSV_PATH = 'events.csv'
-# SMTP‑настройки (добавьте в enviroment.env)
-EMAIL_HOST = os.getenv('EMAIL_HOST')         # например, smtp.gmail.com
-EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
-EMAIL_USER = os.getenv('EMAIL_USER')         # ваш email-логин
-EMAIL_PASS = os.getenv('EMAIL_PASS')         # пароль или app password
-EMAIL_TO   = os.getenv('EMAIL_TO')           # куда слать письма
 
-# Основное меню — три варианта
+EMAIL_HOST = os.getenv('EMAIL_HOST')         
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USER = os.getenv('EMAIL_USER')         
+EMAIL_PASS = os.getenv('EMAIL_PASS')         
+EMAIL_TO   = os.getenv('EMAIL_TO')           
+
+
 action_buttons = [['Обо мне', 'Проекты', 'Связаться со мной']]
 action_pick = ReplyKeyboardMarkup(
     keyboard=action_buttons,
@@ -30,7 +30,7 @@ action_pick = ReplyKeyboardMarkup(
     one_time_keyboard=True
 )
 
-# Кнопка «Назад»
+
 back_buttons = [['Назад']]
 back_keyboard = ReplyKeyboardMarkup(
     keyboard=back_buttons,
@@ -38,7 +38,7 @@ back_keyboard = ReplyKeyboardMarkup(
     one_time_keyboard=True
 )
 
-# Словарь с картинками и подписями
+
 media_map = {
     'Обо мне': {
         'photo': 'book.png',
@@ -56,7 +56,7 @@ media_map = {
             '1) По данным цен на акции из индексов S&P-500, NASDAQ-100, DJI в течение последних 10 лет подсчитаны доходности, построены гистограммы, boxplot. Объединив доходности по секторам экономики построена диаграмма рассеивания, также были посчитаны метрики, такие как Value-at-Risk и Expected shortfall. Посмотреть проект в <a href="https://colab.research.google.com/drive/1-LlCYVhVXPQVtuLV4wqcGTIVbv89us54?usp=sharing">Colab</a>.\n\
 2) Обсчет AB теста. Посмотреть проект в <a href="https://colab.research.google.com/drive/1P43gNgNH6G82LQiEdvQGscyCuDa8CxcA?usp=sharing">Colab</a>.\n\
 3) Проверка различных гипотез с помощью подобранных для задачи критериев, таких как: точный t - тест, асимптотический z-тест, тест Фишера и другие. Посмотреть проект в <a href="https://colab.research.google.com/drive/1zd6b2jpKm_D82eis8U8Gcmm6NHs_t8iW?usp=sharing">Colab</a>.\n\
-4) Телеграм бот для сбора данных и проведения AB тестов'
+4) Телеграм бот для сбора данных и проверки гипотезы о долях.'
         ),
         'parse_mode': 'HTML'
     },
@@ -64,19 +64,18 @@ media_map = {
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     log_event(update.effective_user.id, False)
-    # Приветствие и главное меню
+    
     await update.message.reply_text('Приветствую! Этот бот создан для того, чтобы облегчить процесс найма. Тут вы сможете найти более полную информацию, а так же связаться со мной')
     await update.message.reply_text(
         'Пожалуйста, выберите одно из действий ниже:',
         reply_markup=action_pick
     )
-    # Сбросим флаг ожидания ввода email‑сообщения
+    
     context.user_data.pop('awaiting_email', None)
 
 async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
 
-    # Если ждем от пользователя текст для отправки на почту
     if context.user_data.get('awaiting_email'):
         # 1.1) Обработка отмены
         if text == 'Отменить':
@@ -84,9 +83,9 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 'Отправка сообщения отменена.',
                 reply_markup=action_pick
             )
-            # НЕ логируем отмену как отправку
+            
         else:
-            # 1.2) Формируем и отправляем письмо
+            
             user_msg = text
             msg = EmailMessage()
             msg['Subject'] = 'Сообщение из Telegram‑бота'
@@ -100,7 +99,7 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     server.login(EMAIL_USER, EMAIL_PASS)
                     server.send_message(msg)
 
-                # Логируем факт именно УСПЕШНОЙ отправки письма
+                
                 log_event(update.effective_user.id, True)
 
                 await update.message.reply_text(
@@ -112,13 +111,13 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     f'Ошибка при отправке письма: {e}',
                     reply_markup=action_pick
                 )
-                # В случае ошибки тоже НЕ логируем отправку
+                
 
-        # 1.3) В любом случае — сброс флага ожидания
+        
         context.user_data.pop('awaiting_email', None)
         return
 
-    # Обработка «Назад»
+    
     if text == 'Назад':
         await update.message.reply_text(
             'Пожалуйста, выберите одно из действий ниже:',
@@ -126,28 +125,28 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # Вариант 1 и 2
+    
     if text in media_map:
         media = media_map[text]
         photo_path = media['photo']
         caption = media['caption']
-        parse_mode = media.get('parse_mode')  # например 'HTML' или 'MarkdownV2'
+        parse_mode = media.get('parse_mode')  
 
-     # Отправляем фото с учётом парсинга ссылок
+     
         with open(photo_path, 'rb') as img:
             if parse_mode:
                 await update.message.reply_photo(img, caption=caption, parse_mode=parse_mode)
             else:
                 await update.message.reply_photo(img, caption=caption)
 
-        # Показываем кнопку «Назад»
+        
         await update.message.reply_text(
             'Чтобы вернуться в меню, нажмите «Назад»',
             reply_markup=back_keyboard
         )
         return
 
-    # Вариант 3: переходим в режим ввода e‑mail текста
+    
     if text == 'Связаться со мной':
         await update.message.reply_text(
             'Введите, пожалуйста, текст сообщения для отправки на почту:',
@@ -158,21 +157,21 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data['awaiting_email'] = True
         return
 
-    # Любой другой ввод
+    
     await update.message.reply_text(
         'Пожалуйста, используйте кнопки ниже:',
         reply_markup=action_pick
     )
 
 def log_event(telegram_id: int, event: bool):
-    """Appends a line to CSV with telegram_id, event (False=start, True=email_sent?), timestamp."""
+    
     write_header = not os.path.exists(CSV_PATH) or os.stat(CSV_PATH).st_size == 0
 
     with open(CSV_PATH, mode='a', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         if write_header:
             writer.writerow(['telegram_id', 'event', 'timestamp'])
-        # Событие: True = заход (/start), False = отправка письма
+        
         timestamp = datetime.utcnow().isoformat()
         writer.writerow([telegram_id, event, timestamp])
 
