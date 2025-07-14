@@ -82,6 +82,8 @@
 
 <img width="943" height="500" alt="image" src="https://github.com/user-attachments/assets/b3eb9a3e-c53e-4b71-b2fa-86a570a909ae" />
 
+Телеграм id аккаунта, отправил ли пользователь сообщение, время действия.
+
 ---
 ## Что дальше делать с этой информацией?
 
